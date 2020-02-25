@@ -1,0 +1,15 @@
+Package: dashFloorplan
+Title: Wrapper for d3 js code for manipulating floor plans.
+Version: 0.0.1
+Description: Wrapper for d3 js code for manipulating floor plans.
+Depends: R (>= 3.0.2)
+Imports: 
+Suggests: 
+License: MIT + file LICENSE
+URL: 
+BugReports: 
+Encoding: UTF-8
+LazyData: true
+KeepSource: true
+Author: Wesley Reinhart [aut]
+Maintainer: Wesley Reinhart <reinhart.wes@gmail.com>

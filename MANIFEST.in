@@ -1,0 +1,7 @@
+include dash_floorplan/dash_floorplan.min.js
+include dash_floorplan/dash_floorplan.min.js.map
+include dash_floorplan/metadata.json
+include dash_floorplan/package-info.json
+include README.md
+include LICENSE
+include package.json
