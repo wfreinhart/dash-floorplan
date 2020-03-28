@@ -2,7 +2,7 @@ import React, {Component} from 'react';
 import PropTypes from 'prop-types';
 import * as d3 from 'd3';
 import contextMenu from 'd3-context-menu';
-
+import {Button, Pane} from 'evergreen-ui';
 
 /**
  * ExampleComponent is an example component.
@@ -13,17 +13,16 @@ import contextMenu from 'd3-context-menu';
  */
 export default class DashFloorPlan extends Component {
   componentDidMount() {
-    console.log(this.props);
     this.drawChart();
   }
 
   drawChart() {
-    const width = this.props.width;
-    const height = this.props.height;
-    const image = this.props.image;
-    var polygons = this.props.data;
+    const component = this;
 
-    console.log({'width': width, 'height': height, 'polygons': polygons, 'image': image});
+    const width = component.props.width;
+    const height = component.props.height;
+    const image = component.props.image;
+    var polygons = component.props.data;
 
     var dragging = false, drawing = false, startPoint;
     var svg = d3.select('body').append('svg')
@@ -46,7 +45,9 @@ export default class DashFloorPlan extends Component {
     ];
 
     var scale_x = d3.scaleLinear().range([0, width]).domain([0, 1]);
+    var unscale_x = d3.scaleLinear().range([0, 1]).domain([0, width]);
     var scale_y = d3.scaleLinear().range([height, 0]).domain([1, 0]);
+    var unscale_y = d3.scaleLinear().range([0, 1]).domain([0, height]);
     var scale_c = d3.scaleSequential(d3.interpolateSpectral);
 
     var drawing = false;
@@ -54,7 +55,6 @@ export default class DashFloorPlan extends Component {
     for(var j = 0; j < polygons.length; j++) {
         makePolygon(polygons[j])
     }
-
 
     var polygon_menu = [
         {
@@ -106,6 +106,8 @@ export default class DashFloorPlan extends Component {
                     return scale_c(poly.color);
                 })
                 .attr("fill-opacity","0.5")
+                .attr("data", polydata)
+                .attr("color", polydata.color)
                 // .on('click', function(d) { console.log(d.points); })
                 .on("contextmenu", function(d) { contextMenu(polygon_menu)(this, d) } );
         for(var i = 0; i < polydata.points.length; i++) {
@@ -136,6 +138,7 @@ export default class DashFloorPlan extends Component {
                 })
                 .on("end", function(){
                     dragging = false;
+                    updatePolygons();
                 })
             );
         g.selectAll('polygon')
@@ -159,51 +162,11 @@ export default class DashFloorPlan extends Component {
                         circles[i].setAttribute('cy', points[i].y);
                     }
                 })
-                // .on("end", function(d) { console.log(d, this, this.parentNode); })
+                .on("end", function(d) { updatePolygons(); })
             );
-        // var points = d3.select(this.parentNode).select('polygon').node().points;
-        // makePolygonHandles(g, points);
-                // .call(d3.drag()
-                //     .on("start", function(){
-                //         dragging = true;
-                //     })
-                //     .on("drag", function(d) {
-                //         d3.select(this)
-                //             .attr("cx", d3.event.x)
-                //             .attr("cy", d3.event.y);
-                //         var points = d3.select(this.parentNode).select('polygon').node().points;
-                //         var idx = this.getAttribute('node-idx');
-                //         points[idx].x = d3.event.x;
-                //         points[idx].y = d3.event.y;
-                //     })
-                //     .on("end", function(){
-                //         dragging = false;
-                //     })
-                // );
-        // var text = g.selectAll("text")
-        //     .data(circleData)
-        //     .enter()
-        //     .append("text");
-        // var textLabels = text
-        //     .attr("x", function(d) { return d.cx; })
-        //     .attr("y", function(d) { return d.cy; })
-        //     .text( function (d) { return "( " + d.cx + ", " + d.cy +" )"; })
-        //     .attr("font-family", "sans-serif")
-        //     .attr("font-size", "20px")
-        //     .attr("fill", "red");
-        // old way of doing things
-        // for(var i = 0; i < polydata.points.length; i++) {
-        //     g.append('circle')
-        //         .attr('cx', scale_x(polydata.points[i].x))
-        //         .attr('cy', scale_y(polydata.points[i].y))
-        //         .attr('r', 4)
-        //         .attr('fill', 'white')
-        //         .attr('stroke', '#000')
-        //         .attr('is-handle', 'true')
-        //         .attr('node-idx', i)
-        //         .style({cursor: 'pointer'});
-        // }
+        updatePolygons();
     }
+
 
     function makePolygonHandles(g, points) {
         g.selectAll('circle')
@@ -234,6 +197,7 @@ export default class DashFloorPlan extends Component {
                 })
                 .on("end", function(){
                     dragging = false;
+                    updatePolygons();
                 })
             );
     }
@@ -263,6 +227,7 @@ export default class DashFloorPlan extends Component {
                 exitDrawing();
             }
         });
+
 
     svg.on("contextmenu", function(d, elm, i) { contextMenu(canvas_menu)(d, elm, i) } );
 
@@ -308,12 +273,29 @@ export default class DashFloorPlan extends Component {
             .attr('is-handle', 'true')
             .style({cursor: 'pointer'});
         }
+        updatePolygons();
     });
 
 
     function closePolygon() {
         var this_poly = {"points": points.map(function(p, i) { return {"x": p[0]/width, "y": p[1]/height, "i": i} } ), "color": Math.random()};
         makePolygon(this_poly);
+    }
+
+
+    function updatePolygons() {
+        const polygons = svg.selectAll('polygon')._groups[0];
+        var data = [];
+        for (var i = 0; i < polygons.length; i++) {
+            var points = [];
+            for (var j = 0; j < polygons[i].points.length; j++) {
+                var p = polygons[i].points[j];
+                points.push({"x": p.x/width, "y": p.y/height});
+            }
+            var this_poly = {"points": points, "color": polygons[i].getAttribute('color')};
+            data.push(this_poly);
+        }
+        component.props.setProps({ data: data});
     }
 
 
@@ -330,30 +312,18 @@ export default class DashFloorPlan extends Component {
                     .attr('stroke-width', 1);
     })
 
+
+    // setInterval(updatePolygons, 1000);  // update the data every 1000 ms
+
+
   }
 
     render() {
-        const {id, label, setProps, value} = this.props;
-
-/* todo: figure out how to send a callback from DashFloorPlan (?) */
         return (
-            <div id={id}>
-                DashFloorPlan: {label}&nbsp;
-                <input
-                    value={value}
-                    onChange={
-                        /*
-                         * Send the new value to the parent component.
-                         * setProps is a prop that is automatically supplied
-                         * by dash's front-end ("dash-renderer").
-                         * In a Dash app, this will update the component's
-                         * props and send the data back to the Python Dash
-                         * app server if a callback uses the modified prop as
-                         * Input or State.
-                         */
-                        e => setProps({ value: e.target.value })
-                    }
-                />
+            <div id={this.props.id}>
+                <Pane>
+                    DashFloorPlan
+                </Pane>
             </div>
         );
     }
@@ -368,16 +338,6 @@ DashFloorPlan.propTypes = {
      * The ID used to identify this component in Dash callbacks.
      */
     id: PropTypes.string,
-
-    /**
-     * A label that will be printed when this component is rendered.
-     */
-    label: PropTypes.string.isRequired,
-
-    /**
-     * The value displayed in the input.
-     */
-    value: PropTypes.string,
 
     /**
      * Dash-assigned callback that should be called to report property changes

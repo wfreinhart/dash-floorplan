@@ -8,6 +8,7 @@ class App extends Component {
         super();
         this.state = {
             value: '',
+            data: [],
         };
         this.setProps = this.setProps.bind(this);
     }

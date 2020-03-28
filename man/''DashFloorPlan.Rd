@@ -10,15 +10,11 @@ ExampleComponent is an example component. It takes a property, `label`, and di
 }
 
 \usage{
-''DashFloorPlan(id=NULL, label=NULL, value=NULL, height=NULL, width=NULL, data=NULL, image=NULL)
+''DashFloorPlan(id=NULL, height=NULL, width=NULL, data=NULL, image=NULL)
 }
 
 \arguments{
 \item{id}{Character. The ID used to identify this component in Dash callbacks.}
-
-\item{label}{Character. A label that will be printed when this component is rendered.}
-
-\item{value}{Character. The value displayed in the input.}
 
 \item{height}{Numeric. Height of the svg panel in pixels.}
 
