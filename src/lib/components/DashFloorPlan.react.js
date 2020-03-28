@@ -292,7 +292,7 @@ export default class DashFloorPlan extends Component {
                 var p = polygons[i].points[j];
                 points.push({"x": p.x/width, "y": p.y/height});
             }
-            var this_poly = {"points": points, "color": polygons[i].getAttribute('color')};
+            var this_poly = {"points": points, "color": parseFloat(polygons[i].getAttribute('color'))};
             data.push(this_poly);
         }
         component.props.setProps({ data: data});
