@@ -1,18 +1,17 @@
 import React, {Component} from 'react';
 import PropTypes from 'prop-types';
 import * as d3 from 'd3';
-import contextMenu from 'd3-context-menu';
-import {Button, Pane} from 'evergreen-ui';
+import {Button, Pane, Popover, Position, Menu, Badge, Select, option} from 'evergreen-ui';
 
-/**
- * ExampleComponent is an example component.
- * It takes a property, `label`, and
- * displays it.
- * It renders an input with the property `value`
- * which is editable by the user.
- */
+
 export default class DashFloorPlan extends Component {
   componentDidMount() {
+    this.svg = d3.select('body').append('svg')
+        .attr('height', this.props.height)
+        .attr('width', this.props.width);
+    this.poly_start = {};
+    this.dragging = false;
+    this.drawing = false;
     this.drawChart();
   }
 
@@ -22,151 +21,29 @@ export default class DashFloorPlan extends Component {
     const width = component.props.width;
     const height = component.props.height;
     const image = component.props.image;
-    var polygons = component.props.data;
+    const shapes = component.props.shapes;
+    const room_data = component.props.data;
 
-    var dragging = false, drawing = false, startPoint;
-    var svg = d3.select('body').append('svg')
-        .attr('height', height)
-        .attr('width', width);
+    // todo: figure out which rooms are assigned and which are not
+
+    var startPoint;
+    var svg = component.svg;
     var myimage = svg.append('image')
         .attr("xlink:href", function() {return image})
         .attr('width',width)
         .attr('height',height);
     var points = [], g;
 
-    var room_data = [
-        {name: "WEST BEDROOM", data: 0.1},
-        {name: "BATH", data: 0.2},
-        {name: "EAST BEDROOM", data: 0.3},
-        {name: "TERRACE", data: 0.4},
-        {name: "KITCHEN", data: 0.5},
-        {name: "FOYER", data: 0.6},
-        {name: "LIVING ROOM", data: 0.7}
-    ];
-
     var scale_x = d3.scaleLinear().range([0, width]).domain([0, 1]);
-    var unscale_x = d3.scaleLinear().range([0, 1]).domain([0, width]);
     var scale_y = d3.scaleLinear().range([height, 0]).domain([1, 0]);
-    var unscale_y = d3.scaleLinear().range([0, 1]).domain([0, height]);
     var scale_c = d3.scaleSequential(d3.interpolateSpectral);
 
-    var drawing = false;
+    var drawing = component.drawing;
+    var dragging = component.dragging
 
-    for(var j = 0; j < polygons.length; j++) {
-        makePolygon(polygons[j])
+    for(var j = 0; j < shapes.length; j++) {
+        component.makePolygon(shapes[j])
     }
-
-    var polygon_menu = [
-        {
-            title: 'Delete',
-            action: function(elm, d) {
-                elm.parentNode.remove();
-            }
-        },
-        {
-            title: 'Duplicate',
-            action: function(elm, d) {
-                var these_points = [...elm.points];
-                var w = Math.max(...these_points.map(p => p.x)) - Math.min(...these_points.map(p => p.x));
-                var h = Math.max(...these_points.map(p => p.y)) - Math.min(...these_points.map(p => p.y));
-                var dupe = {"points": these_points.map(function(p) { return {"x": (p.x+w/2)/width, "y": (p.y+h/2)/height} } ),
-                            "color": Math.random()};
-                makePolygon(dupe);
-            }
-        },
-        // todo: return to edit mode after polygon built
-        {
-            title: 'Associate data',
-            children: room_data.map(function(room, idx) {
-                return {
-                    title: room.name,
-                    action: function(elm, d) {
-                        if(idx < 0 || idx >= room_data.length) {
-                            return;
-                        }
-                        elm.setAttribute("fill", scale_c(room_data[idx].data));
-                        // todo: display data
-                        console.log(elm, d);
-                    }
-                }
-            })
-        }
-    ]
-
-    var poly_start;
-    function makePolygon(polydata) {
-        var g = svg.append('g');
-        g.selectAll("polygon")
-            .data([polydata])
-            .enter().append("polygon")
-                .attr("points", function(poly) {
-                    return poly.points.map(function(p) { return [scale_x(p.x),scale_y(p.y)].join(","); }).join(" ");
-                })
-                .attr("fill", function(poly) {
-                    return scale_c(poly.color);
-                })
-                .attr("fill-opacity","0.5")
-                .attr("data", polydata)
-                .attr("color", polydata.color)
-                // .on('click', function(d) { console.log(d.points); })
-                .on("contextmenu", function(d) { contextMenu(polygon_menu)(this, d) } );
-        for(var i = 0; i < polydata.points.length; i++) {
-            g.append('circle')
-                .attr('cx', scale_x(polydata.points[i].x))
-                .attr('cy', scale_y(polydata.points[i].y))
-                .attr('r', 4)
-                .attr('fill', 'white')
-                .attr('stroke', '#000')
-                .attr('is-handle', 'true')
-                .attr('node-idx', i)
-                .style({cursor: 'pointer'})
-        }
-        g.selectAll('circle')
-            // .on('click', function() {console.log(this.getAttribute('node-idx'));})
-            .call(d3.drag()
-                .on("start", function(){
-                    dragging = true;
-                })
-                .on("drag", function(d) {
-                    d3.select(this)
-                        .attr("cx", d3.event.x)
-                        .attr("cy", d3.event.y);
-                    var points = d3.select(this.parentNode).select('polygon').node().points;
-                    var idx = this.getAttribute('node-idx');
-                    points[idx].x = d3.event.x;
-                    points[idx].y = d3.event.y;
-                })
-                .on("end", function(){
-                    dragging = false;
-                    updatePolygons();
-                })
-            );
-        g.selectAll('polygon')
-            .call(d3.drag()
-                .on("start", function(d){
-                    var poly_points = d3.select(this.parentNode).select('polygon').node().points;
-                    poly_start = {"x": d3.event.x, "y": d3.event.y,
-                                    "points": [...poly_points].map(function(p) { return {x: p.x, y: p.y}})};
-                    // var circles = d3.select(this.parentNode).selectAll('circle')._groups[0];
-                })
-                .on("drag", function(d) {
-                    var delta = {"x": d3.event.x - poly_start.x, "y": d3.event.y - poly_start.y};
-                    var points = d3.select(this.parentNode).select('polygon').node().points;
-                    for(var i = 0; i < points.length; i++) {
-                        points[i].x = poly_start.points[i].x + delta.x;
-                        points[i].y = poly_start.points[i].y + delta.y;
-                    }
-                    var circles = d3.select(this.parentNode).selectAll('circle')._groups[0];
-                    for(var i = 0; i < circles.length; i++) {
-                        circles[i].setAttribute('cx', points[i].x);
-                        circles[i].setAttribute('cy', points[i].y);
-                    }
-                })
-                .on("end", function(d) { updatePolygons(); })
-            );
-        updatePolygons();
-    }
-
 
     function makePolygonHandles(g, points) {
         g.selectAll('circle')
@@ -197,7 +74,8 @@ export default class DashFloorPlan extends Component {
                 })
                 .on("end", function(){
                     dragging = false;
-                    updatePolygons();
+                    component.updatePolygonData();
+        // updatePolygons();
                 })
             );
     }
@@ -225,20 +103,19 @@ export default class DashFloorPlan extends Component {
         .on("keydown", function() {
             if(d3.event.keyCode == 27) {
                 exitDrawing();
+                component.props.setProps({ selection: null});
+                component.updateOpacity();
+            }
+            if(d3.event.keyCode == 46 || d3.event.keyCode == 8) {
+                component.deletePolygon();
+                component.props.setProps({ selection: null});
+                component.updateOpacity();
+            }
+            if(d3.event.keyCode == 67 && d3.event.ctrlKey) {
+                component.duplicatePolygon();
+                component.updateOpacity();
             }
         });
-
-
-    svg.on("contextmenu", function(d, elm, i) { contextMenu(canvas_menu)(d, elm, i) } );
-
-    var canvas_menu = [
-        {
-            title: 'Test',
-            action: function(d, elm, i) {
-                console.log(d, elm, i);
-            }
-        }
-    ]
 
 
     function exitDrawing() {
@@ -273,31 +150,37 @@ export default class DashFloorPlan extends Component {
             .attr('is-handle', 'true')
             .style({cursor: 'pointer'});
         }
-        updatePolygons();
+        component.updatePolygonData();
+        // updatePolygons();
     });
 
 
     function closePolygon() {
-        var this_poly = {"points": points.map(function(p, i) { return {"x": p[0]/width, "y": p[1]/height, "i": i} } ), "color": Math.random()};
-        makePolygon(this_poly);
+        var this_poly = {"name": null,
+                         "points": points.map(function(p, i) { return {"x": p[0]/width, "y": p[1]/height, "i": i} } ),
+                        //  "color": Math.random(),
+                         };
+        component.makePolygon(this_poly);
     }
 
 
-    function updatePolygons() {
-        const polygons = svg.selectAll('polygon')._groups[0];
-        var data = [];
-        for (var i = 0; i < polygons.length; i++) {
-            var points = [];
-            for (var j = 0; j < polygons[i].points.length; j++) {
-                var p = polygons[i].points[j];
-                points.push({"x": p.x/width, "y": p.y/height});
-            }
-            var this_poly = {"points": points, "color": parseFloat(polygons[i].getAttribute('color'))};
-            data.push(this_poly);
-        }
-        component.props.setProps({ data: data});
-    }
-
+    // function updatePolygons() {
+    //     const polygons = svg.selectAll('polygon')._groups[0];
+    //     var shapes = [];
+    //     for (var i = 0; i < polygons.length; i++) {
+    //         var points = [];
+    //         for (var j = 0; j < polygons[i].points.length; j++) {
+    //             var p = polygons[i].points[j];
+    //             points.push({"x": p.x/width, "y": p.y/height});
+    //         }
+    //         var this_poly = {"name": polygons[i].getAttribute('name'),
+    //                         "points": points,
+    //                         //  "color": parseFloat(polygons[i].getAttribute('color')),
+    //                         };
+    //         shapes.push(this_poly);
+    //     }
+    //     component.props.setProps({ shapes: shapes});
+    // }
 
     svg.on('mousemove', function() {
         if(!drawing) return;
@@ -312,38 +195,294 @@ export default class DashFloorPlan extends Component {
                     .attr('stroke-width', 1);
     })
 
-
-    // setInterval(updatePolygons, 1000);  // update the data every 1000 ms
-
-
   }
 
+
+  makePolygon(polydata) {
+      const component = this;
+      const width = component.props.width;
+      const height = component.props.height;
+      const image = component.props.image;
+      const shapes = component.props.shapes;
+      const room_data = component.props.data;
+    var scale_x = d3.scaleLinear().range([0, width]).domain([0, 1]);
+    var scale_y = d3.scaleLinear().range([height, 0]).domain([1, 0]);
+    var scale_c = d3.scaleSequential(d3.interpolateSpectral);
+    var svg = component.svg;
+    var g = svg.append('g');
+    g.selectAll("polygon")
+        .data([polydata])
+        .enter().append("polygon")
+            .attr("points", function(poly) {
+                return poly.points.map(function(p) { return [scale_x(p.x),scale_y(p.y)].join(","); }).join(" ");
+            })
+            .attr("color", function(poly) {
+                var color = room_data[polydata.name];
+                if(typeof(color) == 'undefined') {
+                    return null;
+                } else {
+                    return scale_c(color);
+                }
+            })
+            .attr("fill", function(poly) {
+                var color = room_data[polydata.name];
+                if(typeof(color) == 'undefined') {
+                    return null;
+                } else {
+                    return scale_c(color);
+                }
+            })
+            .attr("fill-opacity","0.33")
+            .attr("data", polydata)
+            .attr("name", polydata.name)
+            .attr("idx", svg.selectAll('polygon')._groups[0].length - 1)
+            .on('click', function(d) {
+                component.props.setProps({ selection: this.getAttribute("idx")});
+                component.updateOpacity();
+            })
+    for(var i = 0; i < polydata.points.length; i++) {
+        g.append('circle')
+            .attr('cx', scale_x(polydata.points[i].x))
+            .attr('cy', scale_y(polydata.points[i].y))
+            .attr('r', 4)
+            .attr('fill', 'white')
+            .attr('stroke', '#000')
+            .attr('is-handle', 'true')
+            .attr('node-idx', i)
+            .style({cursor: 'pointer'})
+    }
+    g.selectAll('circle')
+        .call(d3.drag()
+            .on("start", function(){
+                dragging = true;
+            })
+            .on("drag", function(d) {
+                d3.select(this)
+                    .attr("cx", d3.event.x)
+                    .attr("cy", d3.event.y);
+                var points = d3.select(this.parentNode).select('polygon').node().points;
+                var idx = this.getAttribute('node-idx');
+                points[idx].x = d3.event.x;
+                points[idx].y = d3.event.y;
+            })
+            .on("end", function(){
+                dragging = false;
+                component.updatePolygonData();
+    // updatePolygons();
+            })
+        );
+    g.selectAll('polygon')
+        .call(d3.drag()
+            .on("start", function(d){
+                var poly_points = d3.select(this.parentNode).select('polygon').node().points;
+                component.poly_start = {"x": d3.event.x, "y": d3.event.y,
+                                "points": [...poly_points].map(function(p) { return {x: p.x, y: p.y}})};
+                // var circles = d3.select(this.parentNode).selectAll('circle')._groups[0];
+                component.props.setProps({ selection: this.getAttribute("idx")});
+                component.updateOpacity();
+            })
+            .on("drag", function(d) {
+                var delta = {"x": d3.event.x - component.poly_start.x, "y": d3.event.y - component.poly_start.y};
+                var points = d3.select(this.parentNode).select('polygon').node().points;
+                for(var i = 0; i < points.length; i++) {
+                    points[i].x = component.poly_start.points[i].x + delta.x;
+                    points[i].y = component.poly_start.points[i].y + delta.y;
+                }
+                var circles = d3.select(this.parentNode).selectAll('circle')._groups[0];
+                for(var i = 0; i < circles.length; i++) {
+                    circles[i].setAttribute('cx', points[i].x);
+                    circles[i].setAttribute('cy', points[i].y);
+                }
+            })
+            .on("end", function(d) {
+                component.updatePolygonData();
+    // updatePolygons();
+            })
+        );
+        component.updatePolygonData();
+        // updatePolygons();
+}
+
+  updatePolygonData() {
+    const component = this;
+    const width = component.props.width;
+    const height = component.props.height;
+    const svg = component.svg; // d3.select('svg')._groups[0];
+    const polygons = d3.selectAll('polygon')._groups[0];
+    var shapes = [];
+    for (var i = 0; i < polygons.length; i++) {
+        var points = [];
+        for (var j = 0; j < polygons[i].points.length; j++) {
+            var p = polygons[i].points[j];
+            points.push({"x": p.x/width, "y": p.y/height});
+        }
+        var this_poly = {"name": polygons[i].getAttribute('name'),
+                        "points": points,
+                        //  "color": parseFloat(polygons[i].getAttribute('color')),
+                        };
+        shapes.push(this_poly);
+    }
+    component.props.setProps({ shapes: shapes});
+}
+
+
+  updatePolygonNames(event) {
+    const component = this;
+    var scale_c = d3.scaleSequential(d3.interpolateSpectral);
+    // update the polygons in svg
+    const svg = d3.select('svg')._groups[0];
+    const polygons = d3.selectAll('polygon')._groups[0];
+    const idx = parseInt(component.props.selection);
+    const p = polygons[idx];
+    p.setAttribute("name", event.target.value);
+    p.setAttribute("color", scale_c(component.props.data[event.target.value]));
+    p.setAttribute("fill", scale_c(component.props.data[event.target.value]));
+    // also update the data in props
+    component.updatePolygonData();
+  }
+
+
+  updatePolygonIdx() {
+    const component = this;
+    // update the polygons in svg
+    const polygons = d3.selectAll('polygon')._groups[0];
+    for ( var i = 0; i < polygons.length; i++ ) {
+        polygons[i].setAttribute("idx", i);
+    }
+    // also update the data in props
+    component.updatePolygonData();
+  }
+
+
+  deletePolygon() {
+    const component = this;
+    const polygons = d3.selectAll('polygon')._groups[0];
+    const idx = component.props.selection;
+    const p = polygons[parseInt(idx)];
+    if (typeof(p) !== 'undefined' ) {
+        p.parentNode.remove();
+        // update indices
+        component.updatePolygonIdx();
+    }
+  }
+
+
+  duplicatePolygon() {
+    const component = this;
+    const height = component.props.height;
+    const width = component.props.width;
+    const polygons = d3.selectAll('polygon')._groups[0];
+    const idx = component.props.selection;
+    const p = polygons[parseInt(idx)];
+    if (typeof(p) !== 'undefined' ) {
+        var these_points = [...p.points];
+        var w = Math.max(...these_points.map(p => p.x)) - Math.min(...these_points.map(p => p.x));
+        var h = Math.max(...these_points.map(p => p.y)) - Math.min(...these_points.map(p => p.y));
+        var dupe = {"points": these_points.map(function(p) { return {"x": (p.x+w/2)/width, "y": (p.y+h/2)/height} } ),
+                    // "color": elm.getAttribute('color'),
+                    "name": null};
+        component.makePolygon(dupe);
+    }
+    component.updatePolygonIdx();
+  }
+
+
+  updateOpacity() {
+    const component = this;
+    const polygons = d3.selectAll('polygon')._groups[0];
+    for ( var i = 0; i < polygons.length; i++ ) {
+        var sel = parseInt(component.props.selection) == i;
+        var op = 0.33 * (1 + sel);
+        polygons[i].setAttribute("fill-opacity", op);
+    }
+  }
+
+
     render() {
+        const component = this;
+        var rooms = this.props.shapes.map( it => it.name );        
+        var room_names = Object.entries(this.props.data).map( ([key, value]) => key);
+        var room_badges = room_names.map(function(key) {
+                                if ( rooms.includes(key) ) {
+                                    return <Badge margin={8} color='green'>{key}</Badge>
+                                } else {
+                                    return <Badge margin={8} color='red'>{key}</Badge>
+                                }
+                            });
+
+        
+        var shape = component.props.shapes[parseInt(component.props.selection)];
+        var shape_name = null;
+        if (typeof(shape) !== 'undefined') {
+            shape_name = shape.name;
+        }
+        room_names.unshift(null); // allow for empty option
+        // room options are all the room names provided
+        var room_options = room_names.map(function(key) {
+            if ( key == null || !rooms.includes(key) || key == shape_name ) {
+                if ( key == shape_name ) {
+                    return <option value={key} selected>{key}</option>
+                } else {
+                    return <option value={key}>{key}</option>
+                }
+            }
+        });
+
         return (
             <div id={this.props.id}>
                 <Pane>
-                    DashFloorPlan
+        <Button marginRight={16}>{this.props.selection}</Button>
+        <Select onChange={event => this.updatePolygonNames(event)} marginRight={16}>
+            {room_options}
+        </Select>
+                <Popover
+                    position={Position.BOTTOM_LEFT}
+                    content={
+                        <Menu>
+                        <Menu.Group>
+                            <Menu.Item
+                            onSelect={() => component.duplicatePolygon()}
+                            >
+                            Duplicate
+                            </Menu.Item>
+                            <Menu.Item
+                            onSelect={() => component.deletePolygon()}
+                            intent="danger"
+                            >
+                            Delete
+                            </Menu.Item>
+                        </Menu.Group>
+                        </Menu>
+                    }
+                    >
+                    <Button marginRight={16}>Menu</Button>
+                </Popover>
+                </Pane>
+                <Pane>
+                    Rooms: {room_badges}
                 </Pane>
             </div>
         );
     }
 }
 
-DashFloorPlan.defaultProps = {
-data: []
-};
 
 DashFloorPlan.propTypes = {
     /**
      * The ID used to identify this component in Dash callbacks.
      */
-    id: PropTypes.string,
+    id: PropTypes.string.isRequired,
 
     /**
      * Dash-assigned callback that should be called to report property changes
      * to Dash, to make them available for callbacks.
      */
     setProps: PropTypes.func,
+
+    /**
+     * Currently selected polygon.
+     */
+    selection: PropTypes.any,
 
     /**
      * Height of the svg panel in pixels.
@@ -358,7 +497,12 @@ DashFloorPlan.propTypes = {
     /**
      * Array of polygons to display over image.
      */
-    data: PropTypes.array,
+    shapes: PropTypes.array.isRequired,
+
+    /**
+     * Dict of data to associated with the polygons.
+     */
+    data: PropTypes.object.isRequired,
 
     /**
      * Path to image file.

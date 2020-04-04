@@ -1,10 +1,69 @@
 {
   "src/lib/components/DashFloorPlan.react.js": {
-    "description": "ExampleComponent is an example component.\r\nIt takes a property, `label`, and\r\ndisplays it.\r\nIt renders an input with the property `value`\r\nwhich is editable by the user.",
+    "description": "",
     "displayName": "DashFloorPlan",
     "methods": [
       {
         "name": "drawChart",
+        "docblock": null,
+        "modifiers": [],
+        "params": [],
+        "returns": null
+      },
+      {
+        "name": "makePolygon",
+        "docblock": null,
+        "modifiers": [],
+        "params": [
+          {
+            "name": "polydata",
+            "type": null
+          }
+        ],
+        "returns": null
+      },
+      {
+        "name": "updatePolygonData",
+        "docblock": null,
+        "modifiers": [],
+        "params": [],
+        "returns": null
+      },
+      {
+        "name": "updatePolygonNames",
+        "docblock": null,
+        "modifiers": [],
+        "params": [
+          {
+            "name": "event",
+            "type": null
+          }
+        ],
+        "returns": null
+      },
+      {
+        "name": "updatePolygonIdx",
+        "docblock": null,
+        "modifiers": [],
+        "params": [],
+        "returns": null
+      },
+      {
+        "name": "deletePolygon",
+        "docblock": null,
+        "modifiers": [],
+        "params": [],
+        "returns": null
+      },
+      {
+        "name": "duplicatePolygon",
+        "docblock": null,
+        "modifiers": [],
+        "params": [],
+        "returns": null
+      },
+      {
+        "name": "updateOpacity",
         "docblock": null,
         "modifiers": [],
         "params": [],
@@ -16,7 +75,7 @@
         "type": {
           "name": "string"
         },
-        "required": false,
+        "required": true,
         "description": "The ID used to identify this component in Dash callbacks."
       },
       "setProps": {
@@ -25,6 +84,13 @@
         },
         "required": false,
         "description": "Dash-assigned callback that should be called to report property changes\r\nto Dash, to make them available for callbacks."
+      },
+      "selection": {
+        "type": {
+          "name": "any"
+        },
+        "required": false,
+        "description": "Currently selected polygon."
       },
       "height": {
         "type": {
@@ -40,16 +106,19 @@
         "required": true,
         "description": "Width of the svg panel in pixels."
       },
-      "data": {
+      "shapes": {
         "type": {
           "name": "array"
         },
-        "required": false,
-        "description": "Array of polygons to display over image.",
-        "defaultValue": {
-          "value": "[]",
-          "computed": false
-        }
+        "required": true,
+        "description": "Array of polygons to display over image."
+      },
+      "data": {
+        "type": {
+          "name": "object"
+        },
+        "required": true,
+        "description": "Dict of data to associated with the polygons."
       },
       "image": {
         "type": {

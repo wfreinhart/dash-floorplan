@@ -6,21 +6,26 @@
 \title{DashFloorPlan component}
 
 \description{
-ExampleComponent is an example component. It takes a property, `label`, and displays it. It renders an input with the property `value` which is editable by the user.
+
 }
 
 \usage{
-''DashFloorPlan(id=NULL, height=NULL, width=NULL, data=NULL, image=NULL)
+''DashFloorPlan(id=NULL, selection=NULL, height=NULL, width=NULL, shapes=NULL, data=NULL,
+image=NULL)
 }
 
 \arguments{
 \item{id}{Character. The ID used to identify this component in Dash callbacks.}
 
+\item{selection}{Logical | numeric | character | named list | unnamed list. Currently selected polygon.}
+
 \item{height}{Numeric. Height of the svg panel in pixels.}
 
 \item{width}{Numeric. Width of the svg panel in pixels.}
 
-\item{data}{Unnamed list. Array of polygons to display over image.}
+\item{shapes}{Unnamed list. Array of polygons to display over image.}
+
+\item{data}{Named list. Dict of data to associated with the polygons.}
 
 \item{image}{Character. Path to image file.}
 }
