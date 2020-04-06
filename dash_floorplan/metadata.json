@@ -23,6 +23,13 @@
         "returns": null
       },
       {
+        "name": "redrawPolygons",
+        "docblock": null,
+        "modifiers": [],
+        "params": [],
+        "returns": null
+      },
+      {
         "name": "updatePolygonData",
         "docblock": null,
         "modifiers": [],

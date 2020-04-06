@@ -1,7 +1,7 @@
 import React, {Component} from 'react';
 import PropTypes from 'prop-types';
 import * as d3 from 'd3';
-import {Button, Pane, Popover, Position, Menu, Badge, Select, option} from 'evergreen-ui';
+import {Button, Pane, Popover, Position, Menu, Badge, Select, option, toaster} from 'evergreen-ui';
 
 
 export default class DashFloorPlan extends Component {
@@ -24,8 +24,6 @@ export default class DashFloorPlan extends Component {
     const shapes = component.props.shapes;
     const room_data = component.props.data;
 
-    // todo: figure out which rooms are assigned and which are not
-
     var startPoint;
     var svg = component.svg;
     var myimage = svg.append('image')
@@ -34,52 +32,10 @@ export default class DashFloorPlan extends Component {
         .attr('height',height);
     var points = [], g;
 
-    var scale_x = d3.scaleLinear().range([0, width]).domain([0, 1]);
-    var scale_y = d3.scaleLinear().range([height, 0]).domain([1, 0]);
-    var scale_c = d3.scaleSequential(d3.interpolateSpectral);
-
     var drawing = component.drawing;
     var dragging = component.dragging
 
-    for(var j = 0; j < shapes.length; j++) {
-        component.makePolygon(shapes[j])
-    }
-
-    function makePolygonHandles(g, points) {
-        g.selectAll('circle')
-            .data(points)
-            .enter().append("circle")
-                .attr('cx', function(d) { return d.x; })
-                .attr('cy', function(d) { return d.y; })
-                .attr('r', 4)
-                .attr('fill', 'white')
-                .attr('stroke', '#000')
-                .attr('is-handle', 'true')
-                .attr('node-idx', function(d) { return d.i; })
-                .style({cursor: 'pointer'})
-        g.selectAll('circle')
-            .on('click', function() {console.log(this.getAttribute('node-idx'));})
-            .call(d3.drag()
-                .on("start", function(){
-                    dragging = true;
-                })
-                .on("drag", function(d) {
-                    d3.select(this)
-                        .attr("cx", d3.event.x)
-                        .attr("cy", d3.event.y);
-                    var points = d3.select(this.parentNode).select('polygon').node().points;
-                    var idx = this.getAttribute('node-idx');
-                    points[idx].x = d3.event.x;
-                    points[idx].y = d3.event.y;
-                })
-                .on("end", function(){
-                    dragging = false;
-                    component.updatePolygonData();
-        // updatePolygons();
-                })
-            );
-    }
-
+    component.redrawPolygons();
 
     svg.on('dblclick', function(){
         if(svg.select('g.drawPoly').empty()) g = svg.append('g').attr('class', 'drawPoly');
@@ -303,6 +259,22 @@ export default class DashFloorPlan extends Component {
         // updatePolygons();
 }
 
+    redrawPolygons() {
+        const component = this;
+        // clear existing polygons
+        const polygons = d3.selectAll('polygon')._groups[0];
+        for (var i = 0; i < polygons.length; i++) {
+            polygons[i].parentNode.remove();
+        }
+        // draw new data state
+        const shapes = component.props.shapes;
+        for(var j = 0; j < shapes.length; j++) {
+            component.makePolygon(shapes[j])
+        }
+        toaster.notify('Updated polygons.', {id: 'draw-update'})
+    }
+
+
   updatePolygonData() {
     const component = this;
     const width = component.props.width;
@@ -431,7 +403,7 @@ export default class DashFloorPlan extends Component {
         return (
             <div id={this.props.id}>
                 <Pane>
-        <Button marginRight={16}>{this.props.selection}</Button>
+        <Badge marginRight={16}>{this.props.selection}</Badge>
         <Select onChange={event => this.updatePolygonNames(event)} marginRight={16}>
             {room_options}
         </Select>
@@ -457,6 +429,7 @@ export default class DashFloorPlan extends Component {
                     >
                     <Button marginRight={16}>Menu</Button>
                 </Popover>
+                <Button marginRight={16} onClick={() => component.redrawPolygons()}>Redraw polygons</Button>
                 </Pane>
                 <Pane>
                     Rooms: {room_badges}
