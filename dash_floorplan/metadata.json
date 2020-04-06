@@ -99,6 +99,13 @@
         "required": false,
         "description": "Currently selected polygon."
       },
+      "update": {
+        "type": {
+          "name": "bool"
+        },
+        "required": true,
+        "description": "Flag to trigger update from Dash."
+      },
       "height": {
         "type": {
           "name": "number"

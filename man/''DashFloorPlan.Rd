@@ -10,14 +10,16 @@
 }
 
 \usage{
-''DashFloorPlan(id=NULL, selection=NULL, height=NULL, width=NULL, shapes=NULL, data=NULL,
-image=NULL)
+''DashFloorPlan(id=NULL, selection=NULL, update=NULL, height=NULL, width=NULL, shapes=NULL,
+data=NULL, image=NULL)
 }
 
 \arguments{
 \item{id}{Character. The ID used to identify this component in Dash callbacks.}
 
 \item{selection}{Logical | numeric | character | named list | unnamed list. Currently selected polygon.}
+
+\item{update}{Logical. Flag to trigger update from Dash.}
 
 \item{height}{Numeric. Height of the svg panel in pixels.}
 

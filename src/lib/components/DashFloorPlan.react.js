@@ -15,6 +15,13 @@ export default class DashFloorPlan extends Component {
     this.drawChart();
   }
 
+  componentDidUpdate() {
+      if ( this.props.update ) {
+        this.redrawPolygons();
+        this.props.setProps({ update: false});
+      }
+  }
+
   drawChart() {
     const component = this;
 
@@ -429,7 +436,7 @@ export default class DashFloorPlan extends Component {
                     >
                     <Button marginRight={16}>Menu</Button>
                 </Popover>
-                <Button marginRight={16} onClick={() => component.redrawPolygons()}>Redraw polygons</Button>
+                {/* <Button marginRight={16} onClick={() => component.redrawPolygons()}>Redraw polygons</Button> */}
                 </Pane>
                 <Pane>
                     Rooms: {room_badges}
@@ -456,6 +463,11 @@ DashFloorPlan.propTypes = {
      * Currently selected polygon.
      */
     selection: PropTypes.any,
+
+    /**
+     * Flag to trigger update from Dash.
+     */
+    update: PropTypes.bool.isRequired,
 
     /**
      * Height of the svg panel in pixels.
