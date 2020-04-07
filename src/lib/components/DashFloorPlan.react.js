@@ -6,9 +6,7 @@ import {Button, Pane, Popover, Position, Menu, Badge, Select, option, toaster} f
 
 export default class DashFloorPlan extends Component {
   componentDidMount() {
-    this.svg = d3.select('body').append('svg')
-        .attr('height', this.props.height)
-        .attr('width', this.props.width);
+    this.svg = d3.select('#floorplan-svg');
     this.poly_start = {};
     this.dragging = false;
     this.drawing = false;
@@ -33,10 +31,6 @@ export default class DashFloorPlan extends Component {
 
     var startPoint;
     var svg = component.svg;
-    var myimage = svg.append('image')
-        .attr("xlink:href", function() {return image})
-        .attr('width',width)
-        .attr('height',height);
     var points = [], g;
 
     var drawing = component.drawing;
@@ -410,8 +404,13 @@ export default class DashFloorPlan extends Component {
         return (
             <div id={this.props.id}>
                 <Pane>
-        <Badge marginRight={16}>{this.props.selection}</Badge>
-        <Select onChange={event => this.updatePolygonNames(event)} marginRight={16}>
+                    Rooms: {room_badges}
+                </Pane>
+                <Pane>
+                    Selection:
+        <Badge marginLeft={8} marginRight={16}>{this.props.selection}</Badge>
+            Name:
+        <Select onChange={event => this.updatePolygonNames(event)} marginLeft={8} marginRight={16}>
             {room_options}
         </Select>
                 <Popover
@@ -438,9 +437,9 @@ export default class DashFloorPlan extends Component {
                 </Popover>
                 {/* <Button marginRight={16} onClick={() => component.redrawPolygons()}>Redraw polygons</Button> */}
                 </Pane>
-                <Pane>
-                    Rooms: {room_badges}
-                </Pane>
+                <svg height={this.props.height} width={this.props.width} id={'floorplan-svg'}>
+                    <image href={this.props.image} x="0" y="0" height={this.props.height} width={this.props.width}/>
+                </svg>
             </div>
         );
     }
