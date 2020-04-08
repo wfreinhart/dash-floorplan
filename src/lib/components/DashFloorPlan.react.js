@@ -438,7 +438,8 @@ export default class DashFloorPlan extends Component {
                 {/* <Button marginRight={16} onClick={() => component.redrawPolygons()}>Redraw polygons</Button> */}
                 </Pane>
                 <svg height={this.props.height} width={this.props.width} id={'floorplan-svg'}>
-                    <image href={this.props.image} x="0" y="0" height={this.props.height} width={this.props.width}/>
+                    <image href={this.props.image} x="0" y="0"
+                      height={this.props.height} width={this.props.width} id={'floorplan-image'}/>
                 </svg>
             </div>
         );

@@ -6,7 +6,6 @@ import pathlib
 import os
 
 cwd = pathlib.Path(__file__).parent.absolute()
-print('image exists? ' + str(os.path.isfile('%s/dash-logo.png' % cwd)))
 app = dash.Dash(__name__)
 
 room_data = {
@@ -31,7 +30,10 @@ shape_data = [
             # {'name': 'H', 'points': [{'x': 0.12109375, 'y': 0.048177083333333336}, {'x': 0.2763671875, 'y': 0.046875}, {'x': 0.2734375, 'y': 0.14322916666666666}, {'x': 0.1220703125, 'y': 0.14453125}]}
         ]
 
-image_url = 'https://online.visual-paradigm.com/repository/images/e5728e49-09ce-4c95-b83c-482deee24386.png'
+urls = ['https://online.visual-paradigm.com/repository/images/e5728e49-09ce-4c95-b83c-482deee24386.png',
+        'https://images.squarespace-cdn.com/content/v1/5283ecd9e4b01ee65ae9d2be/1555602434441-SAXE031PUQ04WPC8IIDI/ke17ZwdGBToddI8pDm48kNMIMLR5HyT8T-Jl3SGhJah7gQa3H78H3Y0txjaiv_0fDoOvxcdMmMKkDsyUqMSsMWxHk725yiiHCCLfrh8O1z4YTzHvnKhyp6Da-NYroOW3ZGjoBKy3azqku80C789l0qf8NdpI93-hxF8MNE9FzPo_HfB-tFCGNagDiClHrC5aCYTMbo5wUeomy5kNGMSdfw/423-Elizabeth-Floorplan+%281%29.png?format=1500w',
+        ]
+image_url = urls[0]
 
 app.layout = html.Div([
     html.Button('Force update', id='button', n_clicks=0),
@@ -54,9 +56,9 @@ def display_output(value):
     return 'Current polygons: %s' % str(value)
 
 
-@app.callback(Output('input', 'update'), [Input('button', 'n_clicks')])
+@app.callback([Output('input', 'update'), Output('input', 'image')], [Input('button', 'n_clicks')])
 def update_polygons(value):
-    return True
+    return True, urls[value % 2]
 
 
 if __name__ == '__main__':
