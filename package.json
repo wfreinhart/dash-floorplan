@@ -16,7 +16,7 @@
   "author": "Wesley Reinhart <reinhart.wes@gmail.com>",
   "license": "MIT",
   "dependencies": {
-    "d3": "^5.15.0",
+    "d3": "^7.6.1",
     "d3-context-menu": "^1.1.2",
     "evergreen-ui": "^4.23.0",
     "ramda": "^0.26.1"
